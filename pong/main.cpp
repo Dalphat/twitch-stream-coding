@@ -63,8 +63,8 @@ int main() {
     sf::RectangleShape top_wall{ sf::Vector2f{static_cast<float>(width),height / 20.f } },
         bot_wall{ sf::Vector2f{static_cast<float>(width),height / 20.f } };
 
-    sf::RectangleShape left_bound{ sf::Vector2f{width / 40.f,static_cast<float>(height) } },
-        right_bound{ sf::Vector2f{width / 40.f,static_cast<float>(height) } };
+    sf::RectangleShape left_bound{ sf::Vector2f{width / 80.f,static_cast<float>(height) } },
+        right_bound{ sf::Vector2f{width / 80.f,static_cast<float>(height) } };
     right_bound.setPosition(width - right_bound.getSize().x, 0);
     //top_wall.setPosition();//Correct spot
     bot_wall.setPosition(0, height - bot_wall.getSize().y);
@@ -76,21 +76,21 @@ int main() {
     p2.shape.setPosition(width - p2.shape.getSize().x * 4, height / 2.f);
 
     p1.key_map[sf::Keyboard::Up] = std::pair<my::Key, bool>{ my::Key::Up,false };
-    //p1.key_map[sf::Keyboard::Down] = { my::Key::Down,false };//Being lazy now.
+    p1.key_map[sf::Keyboard::Down] = { my::Key::Down,false };//Being lazy now.
     //p1.key_map[sf::Keyboard::Left] = { my::Key::Left,false };
-    p1.key_map[sf::Keyboard::Right] = { my::Key::Right,false };
+    //p1.key_map[sf::Keyboard::Right] = { my::Key::Right,false };
 
     p1.event_map[my::Key::Up] = [&](float delta)->void {
-        if (!p1.shape.getGlobalBounds().intersects(top_wall.getGlobalBounds()) ||
-            !p1.shape.getGlobalBounds().intersects(bot_wall.getGlobalBounds()) ||
-            !p1.shape.getGlobalBounds().intersects(ball.shape.getGlobalBounds()));
+        if (!p1.shape.getGlobalBounds().intersects(top_wall.getGlobalBounds()) &&
+            !p1.shape.getGlobalBounds().intersects(ball.shape.getGlobalBounds()))
         p1.shape.setPosition(p1.shape.getPosition().x , p1.shape.getPosition().y - delta * p1.velocity);
     };
     p1.event_map[my::Key::Down] = [&](float delta)->void {
-        if (!p1.shape.getGlobalBounds().intersects(top_wall.getGlobalBounds()) ||
-            !p1.shape.getGlobalBounds().intersects(bot_wall.getGlobalBounds()) ||
-            !p1.shape.getGlobalBounds().intersects(ball.shape.getGlobalBounds()));
-        p1.shape.setPosition(p1.shape.getPosition().x, p1.shape.getPosition().y + delta * p1.velocity);
+        //If player does not intersects top wall, bot wall, or ball: move
+        //false or false = true hmm wait... not true? false and false would be true.
+        if (!p1.shape.getGlobalBounds().intersects(bot_wall.getGlobalBounds()) && 
+            !p1.shape.getGlobalBounds().intersects(ball.shape.getGlobalBounds()))
+            p1.shape.setPosition(p1.shape.getPosition().x, p1.shape.getPosition().y + delta * p1.velocity);
     };
 
 
@@ -145,11 +145,16 @@ int main() {
                 ball.velocity.y = -ball.velocity.y;
             else if (ball.shape.getGlobalBounds().intersects(bot_wall.getGlobalBounds()))
                 ball.velocity.y = -ball.velocity.y;
+            else if (ball.shape.getGlobalBounds().intersects(p1.shape.getGlobalBounds()) || 
+                     ball.shape.getGlobalBounds().intersects(p2.shape.getGlobalBounds()))
+                ball.velocity.x = -ball.velocity.x;
+
+            //Moves the ball
             ball.shape.setPosition(ball.shape.getPosition().x +
                                    ball.velocity.x * update.first, 
                                    ball.shape.getPosition().y +
                                    ball.velocity.y * update.first);
-            std::cout << ball.velocity.y << '\n';
+
 
             for (const auto& key : p1.key_map)
                 if (key.second.second)
