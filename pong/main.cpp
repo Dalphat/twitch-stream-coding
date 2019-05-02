@@ -4,38 +4,18 @@
 #include <iostream>
 #include <utility>//Pair
 #include <thread>
+#include <cmath>//Float modulus
 
 #include "ball.hpp"
 #include "paddle.hpp"
-
 /*
-    I may be linking the wrong SFML, one sec.
-    I made another project not that long ago, let me check where it is.
-    It seems to be right... hmm.
-    All the DLL's!
-    I'll just take them all for simplicity sakes.
-    Well, this stinks.
+    Twitch stream coding.
 
-    For now, we will be using my previous project to load the files.
-    For time saving purposes.
+    We created two walls, a ball, two boundaries for restart and 
+    two paddles for each player.
 
-    Alright, so the idea is that we will need one or more balls, with two paddles.
-    There will be four global bounds that will trigger upon ball intact (misspelled?)
+    Doing further offscreen editing of code.
 
-    So we just built one ball.
-    Making walls now to rebound the ball. We could just evaluate beyound the screen
-    but we will be using the walls to make things easier for us.
-
-    Will be using mt19337 twister random for c++
-
-    Time to slow the game down
-
-    Note: This was not rehearsed XD
-
-    So we will make an invisible wall for left and right to evaluate out of bounds.
-    This will reset the position of the ball, and evaluate points for our player.
-
-    Time to add movement.
 */
 int main() {
 
@@ -59,27 +39,37 @@ int main() {
     ball.velocity.x = rand() % 2 ? ball.velocity.x : -ball.velocity.x;
     ball.velocity.y = rand() % 2 ? ball.velocity.y : -ball.velocity.y;
 
-    //No need to draw these:
+    //Top wall and bottom wall: argument is their sizes
     sf::RectangleShape top_wall{ sf::Vector2f{static_cast<float>(width),height / 20.f } },
         bot_wall{ sf::Vector2f{static_cast<float>(width),height / 20.f } };
 
-    sf::RectangleShape left_bound{ sf::Vector2f{width / 80.f,static_cast<float>(height) } },
-        right_bound{ sf::Vector2f{width / 80.f,static_cast<float>(height) } };
-    right_bound.setPosition(width - right_bound.getSize().x, 0);
-    //top_wall.setPosition();//Correct spot
+    //Set wall positions: (top is already at the correct position)
     bot_wall.setPosition(0, height - bot_wall.getSize().y);
 
+    //Left boudary and right boundary: args are their sizes (they aren't drawn). 
+    sf::RectangleShape left_bound{ sf::Vector2f{width / 80.f,static_cast<float>(height) } },
+        right_bound{ sf::Vector2f{width / 80.f,static_cast<float>(height) } };
+
+    //Set boundary positions: (Left is already at the correct location)
+    right_bound.setPosition(width - right_bound.getSize().x, 0);
+
+    //Create the two players: args are their sizes
     my::Paddle p1{ sf::Vector2f{width / 100.f, height / 10.f }, 500.f },
         p2{ sf::Vector2f{width / 100.f, height / 10.f }, 500.f };
 
+    //Set player positions: 
+    //  p1 being twice his position from the wall
+    //  p2 being twich his position from the wall as well (origin is top left)
     p1.shape.setPosition(p1.shape.getSize().x * 2, height / 2.f);
-    p2.shape.setPosition(width - p2.shape.getSize().x * 4, height / 2.f);
+    p2.shape.setPosition(width - p2.shape.getSize().x * 3, height / 2.f);
 
+    //Map key input to key identity and state: Left and Right are unused
     p1.key_map[sf::Keyboard::Up] = std::pair<my::Key, bool>{ my::Key::Up,false };
     p1.key_map[sf::Keyboard::Down] = { my::Key::Down,false };//Being lazy now.
     //p1.key_map[sf::Keyboard::Left] = { my::Key::Left,false };
     //p1.key_map[sf::Keyboard::Right] = { my::Key::Right,false };
 
+    //Map key identity to function
     p1.event_map[my::Key::Up] = [&](float delta)->void {
         if (!p1.shape.getGlobalBounds().intersects(top_wall.getGlobalBounds()) &&
             !p1.shape.getGlobalBounds().intersects(ball.shape.getGlobalBounds()))
@@ -93,6 +83,14 @@ int main() {
             p1.shape.setPosition(p1.shape.getPosition().x, p1.shape.getPosition().y + delta * p1.velocity);
     };
 
+    //Container of the shapes: (manage our drawables at the cost of some pointers)
+    std::vector<sf::Shape*> shapes;
+    shapes.reserve(50);//Reserve more than enough memory our pointer to address
+    shapes.push_back(&ball.shape);
+    shapes.push_back(&top_wall);
+    shapes.push_back(&bot_wall);
+    shapes.push_back(&p1.shape);
+    shapes.push_back(&p2.shape);
 
     //This variable is the running condition variable.
     bool isRunning = true;
@@ -101,21 +99,23 @@ int main() {
     std::pair<float, float> update(0.f, 1 / 120.f), 
         //We will be updating once every 1000/120 = ~8ish mil seconds
                             draw(0.f, 1 / 60.f);
-        //We will be updating once every 1000/120 = ~8ish mil seconds
+        //We will be updating once every 1000/60 = ~16ish mil seconds
 
     //The game loop
     while (isRunning) {
-        delta = clock.getElapsedTime().asSeconds();
-        clock.restart();
+        //Get our delta time
+        delta = clock.getElapsedTime().asSeconds();//Get time since this call
+        clock.restart();//Reset the clock 
 
         //A variable to store the events this cycle.
         sf::Event event;
 
         //Poll our events
-        while (window.pollEvent(event)) {
+        while (window.pollEvent(event)) {//Only entered if windows polled something
             //The default close operation
             if (event.type == sf::Event::Closed)
                 isRunning = false;
+            //Iterate through keys and update state
             for (const auto& map : p1.key_map) {
                 if (sf::Keyboard::isKeyPressed(map.first))
                     p1.key_map[map.first].second = true;
@@ -126,7 +126,8 @@ int main() {
         }
 
         update.first += delta;
-        if (update.first > update.second) {
+        if (update.first > update.second) {//Process updates if ms reached
+            //Check if a player has scored
             if (ball.shape.getGlobalBounds().intersects(left_bound.getGlobalBounds())) {
                 ball.shape.setPosition(width / 2.f, height / 2.f);
                 ball.velocity.x = rand() % 2 ? ball.velocity.x : -ball.velocity.x;
@@ -138,9 +139,10 @@ int main() {
                 ball.shape.setPosition(width / 2.f, height / 2.f);
                 ball.velocity.x = rand() % 2 ? ball.velocity.x : -ball.velocity.x;
                 ball.velocity.y = rand() % 2 ? ball.velocity.y : -ball.velocity.y;
-                ++score.first;
+                ++score.second;
                 std::cout << "Hit right\n";
             }
+            //Check if ball has hit the top or bottom
             if (ball.shape.getGlobalBounds().intersects(top_wall.getGlobalBounds()))
                 ball.velocity.y = -ball.velocity.y;
             else if (ball.shape.getGlobalBounds().intersects(bot_wall.getGlobalBounds()))
@@ -154,30 +156,23 @@ int main() {
                                    ball.velocity.x * update.first, 
                                    ball.shape.getPosition().y +
                                    ball.velocity.y * update.first);
-
-
+            //Move the player
             for (const auto& key : p1.key_map)
                 if (key.second.second)
                     p1.event_map[key.second.first](update.first);
 
             //Modulus doesn't work for floats
-            while(update.first > update.second)
-                update.first -= update.second;
+            update.first = std::fmod(update.first, update.second);//Credit ever everx80
         }
 
-        //This should make the ball move out of the screen.
-        //And it's gone.
-
         window.clear();
-        window.draw(ball.shape);
-        window.draw(top_wall);
-        window.draw(bot_wall);
-        window.draw(p1.shape);
-        window.draw(p2.shape);
+        for (const auto& shape_ptr : shapes)
+            window.draw(*shape_ptr);
 
-        //Place holders for debug
+        //Place holders for debug (These are not drawn)
         //window.draw(left_bound);
         //window.draw(right_bound);
+
         window.display();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 240));
