@@ -5,6 +5,7 @@
 #include <utility>//Pair
 #include <thread>
 #include <cmath>//Float modulus
+#include <array>
 
 #include "ball.hpp"
 #include "paddle.hpp"
@@ -66,23 +67,48 @@ int main() {
     p2.shape.setPosition(width - p2.shape.getSize().x * 3, height / 2.f);
 
     //Map key input to key identity and state: Left and Right are unused
-    p1.key_map[sf::Keyboard::Up] = std::pair<my::Key, bool>{ my::Key::Up,false };
-    p1.key_map[sf::Keyboard::Down] = { my::Key::Down,false };//Being lazy now.
+    p1.key_map[sf::Keyboard::W] = std::pair<my::Key, bool>{ my::Key::Up,false };
+    p1.key_map[sf::Keyboard::S] = { my::Key::Down,false };//Being lazy now.
     //p1.key_map[sf::Keyboard::Left] = { my::Key::Left,false };
     //p1.key_map[sf::Keyboard::Right] = { my::Key::Right,false };
+
+    p2.key_map[sf::Keyboard::Up] = std::pair<my::Key, bool>{ my::Key::Up, false };
+    p2.key_map[sf::Keyboard::Down] = { my::Key::Down, false };//Being lazy now.
+    //p1.key_map[sf::Keyboard::Left] = { my::Key::Left,false };
+    //p1.key_map[sf::Keyboard::Right] = { my::Key::Right,false };
+
+    //Lambdas as a place holder to allow users to further change behavior of input
 
     //Map key identity to function
     p1.event_map[my::Key::Up] = [&](float delta)->void {
         if (!p1.shape.getGlobalBounds().intersects(top_wall.getGlobalBounds()) &&
             !p1.shape.getGlobalBounds().intersects(ball.shape.getGlobalBounds()))
-        p1.shape.setPosition(p1.shape.getPosition().x , p1.shape.getPosition().y - delta * p1.velocity);
+            p1.shape.setPosition(p1.shape.getPosition().x, p1.shape.getPosition().y - delta * p1.velocity);
     };
     p1.event_map[my::Key::Down] = [&](float delta)->void {
         //If player does not intersects top wall, bot wall, or ball: move
         //false or false = true hmm wait... not true? false and false would be true.
-        if (!p1.shape.getGlobalBounds().intersects(bot_wall.getGlobalBounds()) && 
+        if (!p1.shape.getGlobalBounds().intersects(bot_wall.getGlobalBounds()) &&
             !p1.shape.getGlobalBounds().intersects(ball.shape.getGlobalBounds()))
             p1.shape.setPosition(p1.shape.getPosition().x, p1.shape.getPosition().y + delta * p1.velocity);
+    };
+    p2.event_map[my::Key::Up] = [&](float delta)->void {
+        if (!p2.shape.getGlobalBounds().intersects(top_wall.getGlobalBounds()) &&
+            !p2.shape.getGlobalBounds().intersects(ball.shape.getGlobalBounds()))
+            p2.shape.setPosition(p2.shape.getPosition().x, p2.shape.getPosition().y - delta * p1.velocity);
+    };
+    p2.event_map[my::Key::Down] = [&](float delta)->void {
+        //If player does not intersects top wall, bot wall, or ball: move
+        //false or false = true hmm wait... not true? false and false would be true.
+        if (!p2.shape.getGlobalBounds().intersects(bot_wall.getGlobalBounds()) &&
+            !p2.shape.getGlobalBounds().intersects(ball.shape.getGlobalBounds()))
+            p2.shape.setPosition(p2.shape.getPosition().x, p2.shape.getPosition().y + delta * p1.velocity);
+    };
+
+    //Container of players: Possibly ease future event and updates.
+    std::array<my::Paddle*, 2> players{//Two players for now, vector if dynamic
+        &p1,
+        &p2
     };
 
     //Container of the shapes: (manage our drawables at the cost of some pointers)
@@ -126,11 +152,12 @@ int main() {
             if (event.type == sf::Event::Closed)
                 isRunning = false;
             //Iterate through keys and update state
-            for (const auto& map : p1.key_map) {
-                if (sf::Keyboard::isKeyPressed(map.first))
-                    p1.key_map[map.first].second = true;
-                else
-                    p1.key_map[map.first].second = false;
+            for(std::size_t i = 0; i < players.size(); ++i)
+                for (const auto& map : players[i]->key_map) {
+                    if (sf::Keyboard::isKeyPressed(map.first))
+                        players[i]->key_map[map.first].second = true;
+                    else
+                        players[i]->key_map[map.first].second = false;
 
             }
         }
@@ -167,9 +194,10 @@ int main() {
                                    ball.shape.getPosition().y +
                                    ball.velocity.y * update.first);
             //Move the player
-            for (const auto& key : p1.key_map)
-                if (key.second.second)
-                    p1.event_map[key.second.first](update.first);
+            for (std::size_t i = 0; i < players.size(); ++i)
+                for (const auto& key : players[i]->key_map)
+                    if (key.second.second)
+                        players[i]->event_map[key.second.first](update.first);
 
             //Modulus doesn't work for floats
             update.first = std::fmod(update.first, update.second);//Credit ever everx80
