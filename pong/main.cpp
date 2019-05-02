@@ -19,6 +19,8 @@
 */
 int main() {
 
+    const std::size_t win_value = 10;
+
     // obtain a seed from the system clock:
     unsigned int seed = static_cast<unsigned int>(
         std::chrono::system_clock::now().time_since_epoch().count());
@@ -98,14 +100,22 @@ int main() {
     //Timer for delta times and limits:
     std::pair<float, float> update(0.f, 1 / 120.f), 
         //We will be updating once every 1000/120 = ~8ish mil seconds
-                            draw(0.f, 1 / 60.f);
+                            draw(0.f, 1 / 60.f),
+                            print(0.f,1.f);
         //We will be updating once every 1000/60 = ~16ish mil seconds
 
+    std::cout << "Scores: \t" << score.first << '\t' << score.second << '\n';
+
     //The game loop
-    while (isRunning) {
+    while (isRunning && score.first < win_value && score.second < win_value) {
         //Get our delta time
         delta = clock.getElapsedTime().asSeconds();//Get time since this call
         clock.restart();//Reset the clock 
+        
+        print.first += delta;
+        if (print.first > print.second) {//Place holder for things per second.
+            print.first = std::fmod(print.first, print.second);
+        }
 
         //A variable to store the events this cycle.
         sf::Event event;
@@ -133,14 +143,14 @@ int main() {
                 ball.velocity.x = rand() % 2 ? ball.velocity.x : -ball.velocity.x;
                 ball.velocity.y = rand() % 2 ? ball.velocity.y : -ball.velocity.y;
                 ++score.first;
-                std::cout << "Hit left\n";
+                std::cout << "Scores: \t" << score.first << '\t' << score.second << '\n';
             }
             else if (ball.shape.getGlobalBounds().intersects(right_bound.getGlobalBounds())) {
                 ball.shape.setPosition(width / 2.f, height / 2.f);
                 ball.velocity.x = rand() % 2 ? ball.velocity.x : -ball.velocity.x;
                 ball.velocity.y = rand() % 2 ? ball.velocity.y : -ball.velocity.y;
                 ++score.second;
-                std::cout << "Hit right\n";
+                std::cout << "Scores: \t" << score.first << '\t' << score.second << '\n';
             }
             //Check if ball has hit the top or bottom
             if (ball.shape.getGlobalBounds().intersects(top_wall.getGlobalBounds()))
@@ -165,19 +175,35 @@ int main() {
             update.first = std::fmod(update.first, update.second);//Credit ever everx80
         }
 
-        window.clear();
-        for (const auto& shape_ptr : shapes)
-            window.draw(*shape_ptr);
+        draw.first += delta;
+        if (draw.first > draw.second) {
+            window.clear();
+            for (const auto& shape_ptr : shapes)
+                window.draw(*shape_ptr);
 
-        //Place holders for debug (These are not drawn)
-        //window.draw(left_bound);
-        //window.draw(right_bound);
+            //Place holders for debug (These are not drawn)
+            //window.draw(left_bound);
+            //window.draw(right_bound);
 
-        window.display();
+            window.display();
+            draw.first = std::fmod(draw.first, draw.second);
+        }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 240));
-        //std::this_thread::yield();
     }
+    window.close();
+    if (score.first >= win_value)
+        std::cout << "Left player wins\n";
+    else if (score.second >= win_value)
+        std::cout << "Right player wins\n";
+    else
+        std::cout << "No winners this game (GG)\n";
+    std::cout << "\nApplication terminating in 5 seconds\n\n";
+    for (int i = 0; i < 5; ++i) {
+        std::cout << ".\t";
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    std::cout << '\n';
 
     return 0;
 }
