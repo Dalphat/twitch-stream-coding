@@ -164,6 +164,11 @@ int main() {
 
         update.first += delta;
         if (update.first > update.second) {//Process updates if ms reached
+            //Moves the ball
+            ball.shape.setPosition(ball.shape.getPosition().x +
+                ball.velocity.x * update.first,
+                ball.shape.getPosition().y +
+                ball.velocity.y * update.first);
             //Check if a player has scored
             if (ball.shape.getGlobalBounds().intersects(left_bound.getGlobalBounds())) {
                 ball.shape.setPosition(width / 2.f, height / 2.f);
@@ -180,19 +185,32 @@ int main() {
                 std::cout << "Scores: \t" << score.first << '\t' << score.second << '\n';
             }
             //Check if ball has hit the top or bottom
-            if (ball.shape.getGlobalBounds().intersects(top_wall.getGlobalBounds()))
+            if (ball.shape.getGlobalBounds().intersects(top_wall.getGlobalBounds())) {
                 ball.velocity.y = -ball.velocity.y;
-            else if (ball.shape.getGlobalBounds().intersects(bot_wall.getGlobalBounds()))
+                //Un-Moves the ball
+                ball.shape.setPosition(ball.shape.getPosition().x +
+                    ball.velocity.x * update.first,
+                    ball.shape.getPosition().y +
+                    ball.velocity.y * update.first);
+            }
+            else if (ball.shape.getGlobalBounds().intersects(bot_wall.getGlobalBounds())) {
                 ball.velocity.y = -ball.velocity.y;
-            else if (ball.shape.getGlobalBounds().intersects(p1.shape.getGlobalBounds()) || 
-                     ball.shape.getGlobalBounds().intersects(p2.shape.getGlobalBounds()))
+                //Un-Moves the ball
+                ball.shape.setPosition(ball.shape.getPosition().x +
+                    ball.velocity.x * update.first,
+                    ball.shape.getPosition().y +
+                    ball.velocity.y * update.first);
+            }
+            else if (ball.shape.getGlobalBounds().intersects(p1.shape.getGlobalBounds()) ||
+                ball.shape.getGlobalBounds().intersects(p2.shape.getGlobalBounds())) {
                 ball.velocity.x = -ball.velocity.x;
+                //Un-Moves the ball
+                ball.shape.setPosition(ball.shape.getPosition().x +
+                    ball.velocity.x * update.first,
+                    ball.shape.getPosition().y +
+                    ball.velocity.y * update.first);
+            }
 
-            //Moves the ball
-            ball.shape.setPosition(ball.shape.getPosition().x +
-                                   ball.velocity.x * update.first, 
-                                   ball.shape.getPosition().y +
-                                   ball.velocity.y * update.first);
             //Move the player
             for (std::size_t i = 0; i < players.size(); ++i)
                 for (const auto& key : players[i]->key_map)
