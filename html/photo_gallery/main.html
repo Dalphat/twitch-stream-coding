@@ -6,14 +6,13 @@
         </title>
         <script>
             //JS:
-            let num = 0;
-            let src = "https:\\\\github.com\\Dalphat\\twitch-stream-coding\\tree\\master\\html\\photo_gallery\\photo\\"
+            var num = 0;
             function change(value){
                 num += value;
                 num = num < 0 ? 0 : num;
-                let temp = src + num + ".PNG";
-                document.getElementById("image").innerHTML = "<img class=\"image\" src="+temp+"\">";
-                console.log(num + ".PNG");
+                var temp = "photo\\" + num + ".png";
+                document.getElementById("image").innerHTML = "<img class=\"image\" src=\""+temp+"\">";
+                console.log(num + ".png");
             }
 
         </script>
