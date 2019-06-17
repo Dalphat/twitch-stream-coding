@@ -6,11 +6,12 @@
         </title>
         <script>
             //JS:
-            var num = 0;
+            let num = 0;
+            let src = "https:\\\\github.com\\Dalphat\\twitch-stream-coding\\tree\\master\\html\\photo_gallery\\photo\\"
             function change(value){
                 num += value;
                 num = num < 0 ? 0 : num;
-                var temp = "photo\\" + num + ".png";
+                let temp = src + num + ".png";
                 document.getElementById("image").innerHTML = "<img class=\"image\" src=\""+temp+"\">";
                 console.log(num + ".png");
             }
